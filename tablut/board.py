@@ -1,3 +1,5 @@
+import copy
+
 class BasePiece(object):
     """
     Base piece implementation
@@ -33,26 +35,28 @@ class BaseKing(BaseSoldier):
     pass
 
 
+class EmptyTile(object):
+    pass
+
+
 class BaseTile(object):
     """
     Tile of the board
     """
-    piece = None
+    piece = EmptyTile()
 
     def occupied(self):
         """
         Check if tile is occupied
         """
-        return self.piece is not None
-
+        return not isinstance(self.piece, EmptyTile)
 
     def _check_if_can_place(self, piece):
         """
         Raise proper exception if piece cannot be placed
         """
-        if self.piece is not None:
+        if not isinstance(self.piece, EmptyTile):
             raise ValueError("Tile already occupied")
-
 
     def place(self, piece):
         """
@@ -69,8 +73,8 @@ class BaseTile(object):
         Remove a piece if can be removed. 
         Return True if a piece was removed, False if was already empty
         """
-        already_empty = self.piece is None
-        self.piece = None
+        already_empty = isinstance(self.piece, EmptyTile)
+        self.piece = EmptyTile()
         return already_empty    
 
         
@@ -88,6 +92,13 @@ class BaseCamp(BaseTile):
     pass
 
 
+class BaseCampSet(list):
+    """
+    Camps are related by being in one camp set
+    """
+    pass
+
+
 class BaseEscape(BaseTile):
     """
     Escape tile
@@ -97,7 +108,7 @@ class BaseEscape(BaseTile):
         Only king can be placed in escape
         """
         super()._check_if_can_place(piece)
-        if not issubclass(piece, King):
+        if piece is not BaseKing:
             raise ValueError("Only king can occupy escape")
 
 
@@ -126,18 +137,6 @@ class BaseBoard(object):
     """
     Base board implementation
     """
-    TILE_PIECE_MAP = {
-        "te": (BaseTile, None),
-        "TW": (BaseTile, BaseWhiteSoldier),
-        "TB": (BaseTile, BaseBlackSoldier),
-        "TK": (BaseTile, BaseKing),
-        "ce": (BaseCamp, None),
-        "CB": (BaseCamp, BaseBlackSoldier),
-        "ee": (BaseEscape, None),
-        "EK": (BaseEscape, BaseKing),
-        "ce": (BaseCastle, None),
-        "CK": (BaseCastle, BaseKing)
-    }
     BOARD_TEMPLATE = None
 
     def __init__(self):
@@ -147,37 +146,44 @@ class BaseBoard(object):
         # (needed as a winning condition is when the same board status appears twice)
         self.board_history.append(self.pack(self.board))
 
+    @property
+    def TILE_PIECE_MAP(self):
+        raise NotImplementedError
+
+    @property
+    def BOARD_TEMPLATE(self):
+        raise NotImplementedError
+
     def pack(self, board):
         """
         Returns the grid with the str rappresentation stated in TILE_PIECE_MAP
         instead of a matrix of objects
         """
-        grid = self.BOARD_TEMPLATE
+        grid = copy.copy(self.BOARD_TEMPLATE)
 
-        for row in grid:
-            for column in grid:
-                tile = grid[row][column]
+        for row_i, row in enumerate(grid):
+            for col_i, column in enumerate(grid):
+                tile = board[row_i][col_i]
                 # FIXME: really sorry for this :'(((
                 for k, v in self.TILE_PIECE_MAP.items():
-                    if issubclass(tile, v[0]) and \
-                       ((tile.piece is None and v is None) or issubclass(tile.piece, v)):
-                       grid[row][column] = k
-                       break
-
+                    # check if the tile correspond to this symbol
+                    if isinstance(tile, v[0]) and isinstance(tile.piece, v[1]):
+                        grid[row_i][col_i] = k
+                        break
         return grid
 
     def unpack(self, template):
         """
         Builds the board using the board template
         """
-        grid = self.BOARD_TEMPLATE
+        grid = copy.copy(self.BOARD_TEMPLATE)
 
-        for row in grid:
-            for column in row:
-                tile, piece = self.TILE_PIECE_MAP[template[row][column]]
-                grid[row][column] = tile()
+        for row_i, row in enumerate(grid):
+            for col_i, column in enumerate(row):
+                tile, piece = self.TILE_PIECE_MAP[template[row_i][col_i]]
+                grid[row_i][col_i] = tile()
                 if piece is not None:
-                    grid[row][column].place(piece())
+                    grid[row_i][col_i].piece = piece()
         return grid
 
     def is_legal(self, start, end):
@@ -195,7 +201,7 @@ class BaseBoard(object):
         legal_move, message = self.is_legal(start, end)
         if legal_move:
             # perform move
-            piece = start.piece
+            piece = self.board[start[0]][start[1]].piece
             self.board[start[0]][start[1]].empty()
             self.board[end[0]][end[1]].place(piece)
     
@@ -207,7 +213,7 @@ class BaseBoard(object):
                 raise WinException
             elif self.lose_condition():
                 raise LoseException
-            elif self.draw_confition():
+            elif self.draw_condition():
                 raise DrawException
 
             # store move in board history

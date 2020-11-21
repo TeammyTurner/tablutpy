@@ -1,5 +1,5 @@
-from math import abs
-import board
+import copy
+import tablut.board as board
 
 class Tile(board.BaseTile):
     pass
@@ -61,9 +61,9 @@ class Camp(board.BaseCamp):
         if not isinstance(piece, BlackSoldier):
             raise ValueError("Can't occupy castle")
         else:
-            if piece.initial_camp is not self:
-                raise ValueError("Attacker can only move inside his own starting camp")
-
+            # TODO: handle piece not belonging to this camp set
+            pass
+            
 
 class Escape(board.BaseEscape):
     """
@@ -84,29 +84,85 @@ class Board(board.BaseBoard):
     Tablut board is a grid of 9x9 squares
     Depending on the rules the function of each square changes
     """
-    TILE_PIECE_MAP = {
-        "te": (Tile, None),
-        "TW": (Tile, WhiteSoldier),
-        "TB": (Tile, BlackSoldier),
-        "TK": (Tile, King),
-        "ce": (Camp, None),
-        "CB": (Camp, BlackSoldier),
-        "ee": (Escape, None),
-        "EK": (Escape, King),
-        "ce": (Castle, None),
-        "CK": (Castle, King)
-    }
-    BOARD_TEMPLATE = [
-        ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"],
-        ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
-        ["ee", "te", "te", "te", "TW", "te", "te", "te", "ee"],
-        ["CB", "te", "te", "te", "TW", "te", "te", "te", "CB"],
-        ["CB", "CB", "TW", "TW", "CK", "TW", "TW", "CB", "CB"],
-        ["CB", "te", "te", "te", "TW", "te", "te", "te", "CB"],
-        ["ee", "te", "te", "te", "TW", "te", "te", "te", "ee"],
-        ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
-        ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"]
-    ]
+
+    def __init__(self):
+        # create camp sets
+        # 0 -> upper camp set
+        # 1 -> right camp set
+        # 2 -> lower camp set
+        # 3 -> left camp set
+        self.camp_sets = [
+            board.BaseCampSet(),
+            board.BaseCampSet(),
+            board.BaseCampSet(),
+            board.BaseCampSet()
+        ]
+        super().__init__()
+
+    @property
+    def TILE_PIECE_MAP(self):
+        return {
+            "te": (Tile, board.EmptyTile),
+            "TW": (Tile, WhiteSoldier),
+            "TB": (Tile, BlackSoldier),
+            "TK": (Tile, King),
+            "ce": (Camp, board.EmptyTile),
+            "CB": (Camp, BlackSoldier),
+            "ee": (Escape, board.EmptyTile),
+            "EK": (Escape, King),
+            "Se": (Castle, board.EmptyTile),
+            "SK": (Castle, King)
+        }
+
+    @property
+    def BOARD_TEMPLATE(self):
+        return [
+            ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"],
+            ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
+            ["ee", "te", "te", "te", "TW", "te", "te", "te", "ee"],
+            ["CB", "te", "te", "te", "TW", "te", "te", "te", "CB"],
+            ["CB", "CB", "TW", "TW", "SK", "TW", "TW", "CB", "CB"],
+            ["CB", "te", "te", "te", "TW", "te", "te", "te", "CB"],
+            ["ee", "te", "te", "te", "TW", "te", "te", "te", "ee"],
+            ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
+            ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"]
+        ]
+
+    def unpack(self, template):
+        """
+        Builds the board using the board template
+        """
+        grid = copy.copy(self.BOARD_TEMPLATE)
+
+        for row_i, row in enumerate(grid):
+            for col_i, column in enumerate(row):
+                tile, piece = self.TILE_PIECE_MAP[template[row_i][col_i]]
+                grid[row_i][col_i] = tile()
+                
+                if tile is Camp:
+                    # Add the camp to the belonging camp set
+                    if row_i < 2:
+                        # upper camp set
+                        self.camp_sets[0].append(grid[row_i][col_i])
+                    elif row_i > 6:
+                        # lower camp set
+                        self.camp_sets[2].append(grid[row_i][col_i])
+                    elif col_i < 2:
+                        # lower camp set
+                        self.camp_sets[3].append(grid[row_i][col_i])
+                    elif col_i > 6:
+                        # lower camp set
+                        self.camp_sets[1].append(grid[row_i][col_i])
+
+                if piece is BlackSoldier:
+                    # create black soldier with initial camp set
+                    piece = piece(tile)
+                else:
+                    piece = piece()
+                
+                grid[row_i][col_i].piece = piece
+
+        return grid
 
     def is_legal(self, start, end):
         """
@@ -127,15 +183,21 @@ class Board(board.BaseBoard):
         else:
             return False, "Moves need to be orthogonal"
 
+        # End tile cannot be already occupied
+        if not isinstance(et.piece, board.EmptyTile):
+            return False, "Cannot go into already occupied tile"
+
         # End tile cannot be the castle
         if isinstance(et, Castle):
             return False, "Cannot end in the castle"
 
         # End tile cannot be a camp unless a black soldier is moving inside its starting camp
         # and never left it
-        if isinstance(et, Camp) and \
-            ((isinstance(st, Camp) and isinstance(et, Camp) and st.piece.initial_camp == et) is False):
-            return False, "Cannot end in the castle"
+        if isinstance(et, Camp):
+            # Check that both camps belong to same camp set
+            belonging_campset = [st in cs and et in cs for cs in self.camp_sets]
+            if True not in belonging_campset:
+                return False, "Cannot end in camp"
 
         # Escape tile can be reached only by the king
         if isinstance(et, Escape) and isinstance(st.piece, King) is False:
@@ -143,16 +205,19 @@ class Board(board.BaseBoard):
 
         # Check for obastacles in movement
         delta = abs(end[mov_direction] - start[mov_direction]) - 1 # final cell already considered
-        sign = -1 if start[0] > end[0] else 1
-        for i in range(1, delta + 1):
-            if mov_direction == 0:
-                t = self.board[start[0] + (sign * i)][end[1]]
-            else:
-                t = self.board[end[0]][start[1] + (sign * i)]
+        if delta > 0:
+            sign = -1 if start[0] > end[0] or start[1] > end[1] else 1
+            for i in range(1, delta + 1):
+                if mov_direction == 0:
+                    t = self.board[start[0] + (sign * i)][end[1]]
+                else:
+                    t = self.board[end[0]][start[1] + (sign * i)]
 
-            # check that tile is not an obstacle (occupied, castle or camp)
-            if t.occupied() or isinstance(t, Castle) or isinstance(t, Camp):
-                return False, f"Cannot pass over obstacle: {et}"
+                # check that tile is not an obstacle (occupied, castle or camp)
+                if t.occupied() or isinstance(t, Castle) or isinstance(t, Camp):
+                    return False, f"Cannot pass over obstacle: {et}"
+        
+        return True, ""
 
     def apply_captures(self, changed_position):
         """
@@ -160,7 +225,7 @@ class Board(board.BaseBoard):
         """
         changed_tile = self.board[changed_position[0]][changed_position[1]]
         piece_class = [type(changed_tile.piece)]
-        enemy_class = [BlackSoldier] if piece_class == WhiteSoldier else [WhiteSoldier, King]
+        enemy_class = [BlackSoldier] if piece_class[0] == WhiteSoldier else [WhiteSoldier, King]
 
         self._orthogonal_capture(changed_position, enemy_class, piece_class)
         self._king_in_castle_capture()
@@ -172,10 +237,10 @@ class Board(board.BaseBoard):
         """
         castle = self.board[4][4]
         if castle.occupied() and \
-            self._has_neighbour((4, 4), BlackSoldier, "up") and
-            self._has_neighbour((4, 4), BlackSoldier, "right") and
-            self._has_neighbour((4, 4), BlackSoldier, "down") and
-            self._has_neighbour((4, 4), BlackSoldier, "left"):
+            self._has_neighbour((4, 4), [BlackSoldier], "up") and \
+            self._has_neighbour((4, 4), [BlackSoldier], "right") and \
+            self._has_neighbour((4, 4), [BlackSoldier], "down") and \
+            self._has_neighbour((4, 4), [BlackSoldier], "left"):
             self.board[4][4].empty() 
 
     def _king_adjacent_castle_capture(self):
@@ -185,14 +250,14 @@ class Board(board.BaseBoard):
         directions = ["up", "right", "down", "left"]
         
         # check if king is in castle neighborhood
-        king_around_castle = directions.map(lambda d: self._has_neighbour((4, 4), [King], d), directions)
+        king_around_castle = list(map(lambda d: self._has_neighbour((4, 4), [King], d), directions))
         if True in king_around_castle:
             king_direction = directions[king_around_castle.index(True)]
             king_position = self._neighbour_position((4, 4), king_direction)
 
             # Already know that king is adjacent to castle, just check that is adjacent to 3 black soldiers
-            neighbours = directions.map(
-                lambda d: self._has_neighbour(king_position, [BlackSoldier], d), directions)
+            neighbours = list(map(
+                lambda d: self._has_neighbour(king_position, [BlackSoldier], d), directions))
             
             if neighbours.count(True) == 3:
                 # King surrounded by soldiers and castle, remove it
@@ -228,13 +293,20 @@ class Board(board.BaseBoard):
             if self._has_neighbour(changed_position, enemy_class, d):
                 neighbour_pos = self._neighbour_position(changed_position, d)
                 
-                # TODO: Break into smaller chunks? Or build a bigger boolean clause?
-                # If neighbour is king and is adjacent to castle skip control
-                if (isinstance(self.board[neighbour_pos[0]][neighbour_pos[1]], King) and
-                    self._adjacent_to(neighbour_pos, [Castle])) is False:
-                    # Check that enemy is surrounded on the other side (castle is an enemy)
-                    if self._has_neighbour(neighbour_pos, piece_class, d) or \
-                    self._has_neighbour(neighbour_pos, [Castle], d) :
+                neighbour_is_king = isinstance(self.board[neighbour_pos[0]][neighbour_pos[1]].piece, King)
+                king_in_castle = isinstance(self.board[4][4].piece, King)
+                king_adjacent_to_castle = self._adjacent_to(neighbour_pos, [Castle])
+                if (neighbour_is_king and (king_in_castle or king_adjacent_to_castle)) is False:
+                    # Check that enemy is surrounded on the other side 
+                    # castle and camp are counted as enemies
+                    side_border = neighbour_pos[0] in [1, 7] or \
+                        neighbour_pos[1] in [1, 7]
+                    side_castle = neighbour_pos in [[4, 3], [3, 4], [4, 5], [5, 4]]
+
+                    if self._has_neighbour(neighbour_pos, 
+                        piece_class + [Castle, Camp], 
+                        d,
+                        check_piece=not(side_border or side_castle)):
                         # element in neighbour_pos has been captured
                         self.board[neighbour_pos[0]][neighbour_pos[1]].empty()
 
@@ -263,7 +335,8 @@ class Board(board.BaseBoard):
             neighbour = self.board[position[0]][position[1]]
 
             if check_piece:
-                return neighbour.piece is not None and type(neighbour) in enemy
+                return not isinstance(neighbour.piece, board.EmptyTile) and \
+                       type(neighbour.piece) in enemy
             else:
                 return type(neighbour) in enemy
         except ValueError:
@@ -273,14 +346,14 @@ class Board(board.BaseBoard):
         """
         Return the neighbour coords in the specified position
         """
-        pos = position
+        pos = list(position)
         if direction.lower() == "left":
             pos[1] -= 1
-        elif direction.lower() == "right"
+        elif direction.lower() == "right":
             pos[1] += 1
-        elif direction.lower() == "up"
+        elif direction.lower() == "up":
             pos[0] -= 1
-        elif direction.lower() == "down"
+        elif direction.lower() == "down":
             pos[0] += 1
 
         # check that new position is in the board bound
@@ -293,8 +366,12 @@ class Board(board.BaseBoard):
         """
         Check if escape tiles are occupied by a king
         """
-        escape_tiles_pos = ((1, 1), (1, 2), (1, 6), (1, 7), (2, 0), (2, 8), (3, 0), (3, 8),
-            (8, 1), (8, 2), (8, 6), (8, 7), (7, 0), (7, 8), (6, 0), (6, 8))
+        escape_tiles_pos = [
+            (0, 1), (0, 2), (0, 6), (0, 7), 
+            (1, 0), (1, 8), (2, 0), (2, 8),
+            (8, 1), (8, 2), (8, 6), (8, 7), 
+            (7, 0), (7, 8), (6, 0), (6, 8)
+        ]
 
         # Escapes can be occupied only by king
         for pos in escape_tiles_pos:
@@ -306,9 +383,9 @@ class Board(board.BaseBoard):
         Check in all board if king is present
         FIXME: Too ineficient?
         """
-        for row in self.board:
-            for column in row:
-                if self.board[row][column].occupied() and isinstance(self.board[row][column].piece, King):
+        for row_i, row in enumerate(self.board):
+            for col_i, column in enumerate(row):
+                if self.board[row_i][col_i].occupied() and isinstance(self.board[row_i][col_i].piece, King):
                     return False
         return True 
         
