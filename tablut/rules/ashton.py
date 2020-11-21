@@ -215,7 +215,7 @@ class Board(board.BaseBoard):
 
                 # check that tile is not an obstacle (occupied, castle or camp)
                 if t.occupied() or isinstance(t, Castle) or isinstance(t, Camp):
-                    return False, f"Cannot pass over obstacle: {et}"
+                    return False, "Cannot pass over obstacle: %s" % et
         
         return True, ""
 
