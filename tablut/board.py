@@ -115,6 +115,13 @@ class LoseException(Exception):
     pass
 
 
+class DrawException(Exception):
+    """
+    Exception raised in case of draw
+    """
+    pass
+
+
 class BaseBoard(object):
     """
     Base board implementation
@@ -195,19 +202,20 @@ class BaseBoard(object):
             # remove captured pieces
             self.apply_captures(end)
             
+            # check for winning condition
+            if self.winning_condition():
+                raise WinException
+            elif self.lose_condition():
+                raise LoseException
+            elif self.draw_confition():
+                raise DrawException
+
             # store move in board history
             self.board_history.append(self.pack(self.board))
-
         else:
             raise ValueError(message)
 
-        # check for winning condition
-        if self.winning_condition():
-            raise WinException
-        else:
-            raise LoseException
-
-    def apply_captures(self, changed_positions):
+    def apply_captures(self, changed_position):
         """
         Apply captures on the board based on the changed position
         Depending on the game rules the neighborhood could be large or small 
@@ -223,5 +231,11 @@ class BaseBoard(object):
     def lose_condition(self):
         """
         Return true if the lose condition for white player is reached
+        """
+        raise NotImplementedError
+
+    def draw_condition(self):
+        """
+        Return true if the draw condition is met
         """
         raise NotImplementedError
