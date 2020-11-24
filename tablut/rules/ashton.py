@@ -131,6 +131,9 @@ class Board(board.BaseBoard):
             ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"]
         ]
 
+    def get_observation(self):
+        raise NotImplementedError
+
     def unpack(self, template):
         """
         Builds the board using the board template
@@ -268,10 +271,14 @@ class Board(board.BaseBoard):
         piece_class = [type(changed_tile.piece)]
         enemy_class = [BlackSoldier] if piece_class[0] == WhiteSoldier else [
             WhiteSoldier, King]
-
-        self._orthogonal_capture(changed_position, enemy_class, piece_class)
-        self._king_in_castle_capture()
-        self._king_adjacent_castle_capture()
+        reward = 0
+        if self._orthogonal_capture(changed_position, enemy_class, piece_class):
+            reward = reward + 1
+        if self._king_in_castle_capture():
+            reward = reward + 6
+        if self._king_adjacent_castle_capture():
+            reward = reward + 6
+        return reward
 
     def _king_in_castle_capture(self):
         """
@@ -284,6 +291,9 @@ class Board(board.BaseBoard):
                 self._has_neighbour((4, 4), [BlackSoldier], "down") and \
                 self._has_neighbour((4, 4), [BlackSoldier], "left"):
             self.board[4][4].empty()
+            return True
+        else:
+            return False
 
     def _king_adjacent_castle_capture(self):
         """
@@ -305,6 +315,8 @@ class Board(board.BaseBoard):
             if neighbours.count(True) == 3:
                 # King surrounded by soldiers and castle, remove it
                 self.board[king_position[0]][king_position[1]].empty()
+                return True
+        return False
 
     def _orthogonal_capture(self, changed_position, enemy_class, piece_class):
         """
@@ -355,6 +367,8 @@ class Board(board.BaseBoard):
                                            check_piece=not(side_border or side_castle)):
                         # element in neighbour_pos has been captured
                         self.board[neighbour_pos[0]][neighbour_pos[1]].empty()
+                        return True
+        return False
 
     def _adjacent_to(self, position, cell, is_piece=False):
         """

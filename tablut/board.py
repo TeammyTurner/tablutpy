@@ -1,5 +1,6 @@
 import copy
 
+
 class BasePiece(object):
     """
     Base piece implementation
@@ -75,9 +76,9 @@ class BaseTile(object):
         """
         already_empty = isinstance(self.piece, EmptyTile)
         self.piece = EmptyTile()
-        return already_empty    
+        return already_empty
 
-        
+
 class BaseCastle(BaseTile):
     """
     Castle tile
@@ -103,6 +104,7 @@ class BaseEscape(BaseTile):
     """
     Escape tile
     """
+
     def _check_if_can_place(self, piece):
         """
         Only king can be placed in escape
@@ -142,7 +144,7 @@ class BaseBoard(object):
     def __init__(self):
         self.board_history = list()
         self.board = self.unpack(self.BOARD_TEMPLATE)
-        # Save initial state to board history 
+        # Save initial state to board history
         # (needed as a winning condition is when the same board status appears twice)
         self.board_history.append(self.pack(self.board))
 
@@ -204,20 +206,28 @@ class BaseBoard(object):
             piece = self.board[start[0]][start[1]].piece
             self.board[start[0]][start[1]].empty()
             self.board[end[0]][end[1]].place(piece)
-    
+
             # remove captured pieces
-            self.apply_captures(end)
-            
+            reward = self.apply_captures(end)
+            done = False
+            obs = None  # TODO: make this something real
             # check for winning condition
             if self.winning_condition():
-                raise WinException
+                reward = reward+20
+                done = True
+                #raise WinException
             elif self.lose_condition():
-                raise LoseException
+                reward = reward-20
+                done = True
+                #raise LoseException
             elif self.draw_condition():
-                raise DrawException
+                reward = reward-1
+                done = True
+                #raise DrawException
 
             # store move in board history
             self.board_history.append(self.pack(self.board))
+            return obs, reward, done
         else:
             raise ValueError(message)
 
