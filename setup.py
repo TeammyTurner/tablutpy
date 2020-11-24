@@ -1,6 +1,7 @@
-from setuptools import setup
+import setuptools
 
-setup(
+setuptools.setup(
     name="tablutpy",
-    version="0.01"
+    version="0.0.1",
+    packages=setuptools.find_packages()
 )
