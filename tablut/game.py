@@ -1,5 +1,5 @@
 from enum import Enum
-
+from tablut.board import WinException, DrawException, LoseException
 
 class Player(Enum):
     WHITE = "W"
@@ -27,6 +27,8 @@ class Game(object):
             try:
                 self.board.step(Player.WHITE, start, end)
                 self.turn = Player.BLACK
+            except (WinException, DrawException, LoseException):
+                raise
             except Exception as e:
                 raise ValueError("White move illegal: %s" % str(e))
         else:
@@ -40,6 +42,8 @@ class Game(object):
             try:
                 self.board.step(Player.BLACK, start, end)
                 self.turn = Player.WHITE
+            except (WinException, DrawException, LoseException):
+                raise
             except Exception as e:
                 raise ValueError("Black move illegal:%s " % str(e))
         else:

@@ -24,7 +24,7 @@ class RandomPlayer(object):
     def _runtime(self):
         while not self.stop:
             while self.game.turn is not self.player:
-                sleep(0.5)
+                pass
 
             # Find a random move
             start, end = self._random_move()
@@ -38,5 +38,8 @@ class RandomPlayer(object):
                     self.game.white_move(start, end)
                 elif self.player is Player.BLACK:
                     self.game.black_move(start, end)
+            except ValueError:
+                # illegal move... shouldnt happen
+                pass
             except (WinException, LoseException, DrawException):
                 self.stop = True
