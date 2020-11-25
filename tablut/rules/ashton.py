@@ -280,14 +280,20 @@ class Board(board.BaseBoard):
         enemy_class = [BlackSoldier] if piece_class[0] == WhiteSoldier else [
             WhiteSoldier, King]
 
-        self._orthogonal_capture(changed_position, enemy_class, piece_class)
-        self._king_in_castle_capture()
-        self._king_adjacent_castle_capture()
+        captures = self._orthogonal_capture(changed_position, enemy_class, piece_class)
+        king_captured = self._king_in_castle_capture()
+        king_captured = self._king_adjacent_castle_capture()
+
+        if king_captured:
+            captures = -1
+
+        return captures
 
     def _king_in_castle_capture(self):
         """
         If king is still in castle its captured only when its surrounded
         """
+        captured = False
         castle = self.board[4][4]
         if castle.occupied() and \
                 self._has_neighbour((4, 4), [BlackSoldier], "up") and \
@@ -295,12 +301,16 @@ class Board(board.BaseBoard):
                 self._has_neighbour((4, 4), [BlackSoldier], "down") and \
                 self._has_neighbour((4, 4), [BlackSoldier], "left"):
             self.board[4][4].empty()
+            captured = True
+
+        return captured
 
     def _king_adjacent_castle_capture(self):
         """
         When king is adjacent to castle its captured only if its surrounded in all the other sides
         """
         directions = ["up", "right", "down", "left"]
+        captured = False
 
         # check if king is in castle neighborhood
         king_around_castle = list(
@@ -316,6 +326,9 @@ class Board(board.BaseBoard):
             if neighbours.count(True) == 3:
                 # King surrounded by soldiers and castle, remove it
                 self.board[king_position[0]][king_position[1]].empty()
+                captured = True
+
+        return captured
 
     def _orthogonal_capture(self, changed_position, enemy_class, piece_class):
         """
@@ -340,6 +353,8 @@ class Board(board.BaseBoard):
         ... | c | e | S | ...
         => enemy is captured  
         """
+        captured = 0
+
         # Check in all directions
         directions = ["up", "right", "down", "left"]
         for d in directions:
@@ -366,6 +381,8 @@ class Board(board.BaseBoard):
                                            check_piece=not(side_border or side_castle)):
                         # element in neighbour_pos has been captured
                         self.board[neighbour_pos[0]][neighbour_pos[1]].empty()
+                        captured += 1
+        return captured
 
     def _adjacent_to(self, position, cell, is_piece=False):
         """

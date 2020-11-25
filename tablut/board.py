@@ -193,7 +193,9 @@ class BaseBoard(object):
     def step(self, player, start, end):
         """
         Perform a move and update the board status if a move is legal
+        Returns the number of checkers captured
         """
+        captures = 0
         legal_move, message = self.is_legal(player, start, end)
         if legal_move:
             # perform move
@@ -202,7 +204,7 @@ class BaseBoard(object):
             self.board[end[0]][end[1]].place(piece)
     
             # remove captured pieces
-            self.apply_captures(end)
+            captures = self.apply_captures(end)
             
             # check for winning condition
             if self.winning_condition():
@@ -211,16 +213,18 @@ class BaseBoard(object):
                 raise LoseException
             elif self.draw_condition():
                 raise DrawException
-
-            # store move in board history
-            self.board_history.append(self.pack(self.board))
+            else:
+                # store move in board history
+                self.board_history.append(self.pack(self.board))
+                return captures
         else:
             raise ValueError(message)
 
     def apply_captures(self, changed_position):
         """
         Apply captures on the board based on the changed position
-        Depending on the game rules the neighborhood could be large or small 
+        Depending on the game rules the neighborhood could be large or small
+        Returns the number of captured checkers, if also the king is captured returns -1
         """
         raise NotImplementedError
 
