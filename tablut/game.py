@@ -1,30 +1,34 @@
 from enum import Enum
 
-class Turn(Enum):
+
+class Player(Enum):
     WHITE = "W"
     BLACK = "B"
 
+
 class TurnException(Exception):
     pass
+
 
 class Game(object):
     """
     Create a tablut board and lets the user play
     """
+
     def __init__(self, board):
-        self.board = board()
-        self.turn = Turn.WHITE 
-    
+        self.board = board
+        self.turn = Player.WHITE
+
     def white_move(self, start, end):
         """
         Make the white move
         """
-        if self.turn == Turn.WHITE:
+        if self.turn == Player.WHITE:
             try:
-                self.step(start, end)
-                self.turn = Turn.BLACK
+                self.board.step(Player.WHITE, start, end)
+                self.turn = Player.BLACK
             except Exception as e:
-                raise ValueError("White move illegal: " % str(e))
+                raise ValueError("White move illegal: %s" % str(e))
         else:
             raise TurnException("Its black player turn")
 
@@ -32,12 +36,11 @@ class Game(object):
         """
         Make the black move
         """
-        if self.turn == Turn.BLACK:
+        if self.turn == Player.BLACK:
             try:
-                self.step(start, end)
-                self.turn = Turn.WHITE
+                self.board.step(Player.BLACK, start, end)
+                self.turn = Player.WHITE
             except Exception as e:
-                raise ValueError("Black move illegal: " % str(e))
+                raise ValueError("Black move illegal:%s " % str(e))
         else:
             raise TurnException("Its white player turn")
-
