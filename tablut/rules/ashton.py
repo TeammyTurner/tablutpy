@@ -1,5 +1,6 @@
 import copy
 import tablut.board as board
+from tablut.game import Player
 
 
 class Tile(board.BaseTile):
@@ -203,12 +204,21 @@ class Board(board.BaseBoard):
                         i = i-1
         return valids
 
-    def is_legal(self, start, end):
+    def is_legal(self, player, start, end):
         """
         Check if move is legal according to ashton rules
         """
         st = self.board[start[0]][start[1]]
         et = self.board[end[0]][end[1]]
+
+        # start tile cant be empty
+        if isinstance(st.piece, board.EmptyTile):
+            return False, "Start tile is empty"
+
+        # start tile must contain my pieces
+        if (player is Player.BLACK and not (isinstance(st.piece, BlackSoldier))) or \
+           (player is Player.WHITE and not (isinstance(st.piece, WhiteSoldier) or isinstance(st.piece, King))):
+            return False, "Cant move other player pieces"
 
         # start and end cannot be the same
         if start[0] == end[0] and start[1] == end[1]:

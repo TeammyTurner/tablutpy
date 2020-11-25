@@ -137,8 +137,6 @@ class BaseBoard(object):
     """
     Base board implementation
     """
-    BOARD_TEMPLATE = None
-
     def __init__(self):
         self.board_history = list()
         self.board = self.unpack(self.BOARD_TEMPLATE)
@@ -186,19 +184,17 @@ class BaseBoard(object):
                     grid[row_i][col_i].piece = piece()
         return grid
 
-    def is_legal(self, start, end):
+    def is_legal(self, player, start, end):
         """
         Return if move from start to end is legal
         """
         raise NotImplementedError
 
-    def step(self, start, end):
+    def step(self, player, start, end):
         """
         Perform a move and update the board status if a move is legal
         """
-        previous_board = self.board
-
-        legal_move, message = self.is_legal(start, end)
+        legal_move, message = self.is_legal(player, start, end)
         if legal_move:
             # perform move
             piece = self.board[start[0]][start[1]].piece
