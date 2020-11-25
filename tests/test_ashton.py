@@ -192,5 +192,33 @@ class AshtonCaptureTest(unittest.TestCase):
         self.assertTrue(isinstance(board.board[4][3].piece, EmptyTile))
 
 
+class AshtonEndConditionTest(unittest.TestCase):
+    def test_white_win(self):
+        board = ashton.Board()
+        board.board[3][4].empty()
+        board.board[2][4].empty()
+        
+        board.step(Player.WHITE, (4, 4), (2, 4))
+        
+        with self.assertRaises(WinException):
+            board.step(Player.WHITE, (2, 4), (2, 8))
+
+    def test_black_win(self):
+        board = ashton.Board()
+        board.board[4][2].empty()
+        board.board[4][3].empty()
+        board.board[4][5].empty()
+        board.board[4][6].empty()
+        board.board[2][4].empty()
+        board.board[3][4].empty()
+        board.board[5][4].empty()
+        board.board[6][4].empty()
+
+        board.step(Player.BLACK, (4, 1), (4, 3))
+        board.step(Player.BLACK, (4, 7), (4, 5))
+        board.step(Player.BLACK, (1, 4), (3, 4))
+        with self.assertRaises(LoseException):
+            board.step(Player.BLACK, (7, 4), (5, 4))
+
 if __name__ == '__main__':
     unittest.main()

@@ -171,6 +171,7 @@ class Board(board.BaseBoard):
     def get_legal_moves(self, player):
         """
         Checks all the possible moves for a piece
+        # FIXME: Do we really need this?
         """
         valids = [0]*(9**4)
         for row_i, row in enumerate(self.board):  # We explore all the ties
@@ -395,7 +396,7 @@ class Board(board.BaseBoard):
                     type(neighbour.piece) in enemy
             else:
                 return type(neighbour) in enemy
-        except ValueError:
+        except (ValueError, IndexError):
             return False
 
     def _neighbour_position(self, position, direction):

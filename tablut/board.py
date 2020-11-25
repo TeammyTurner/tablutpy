@@ -108,7 +108,7 @@ class BaseEscape(BaseTile):
         Only king can be placed in escape
         """
         super()._check_if_can_place(piece)
-        if piece is not BaseKing:
+        if not isinstance(piece, BaseKing):
             raise ValueError("Only king can occupy escape")
 
 
