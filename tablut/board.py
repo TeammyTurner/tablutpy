@@ -190,13 +190,18 @@ class BaseBoard(object):
         """
         raise NotImplementedError
 
-    def step(self, player, start, end):
+    def step(self, player, start, end, check_legal=True):
         """
         Perform a move and update the board status if a move is legal
         Returns the number of checkers captured
         """
         captures = 0
-        legal_move, message = self.is_legal(player, start, end)
+
+        if not check_legal:
+            legal_move = True
+        else:
+            legal_move, message = self.is_legal(player, start, end)
+        
         if legal_move:
             # perform move
             piece = self.board[start[0]][start[1]].piece
