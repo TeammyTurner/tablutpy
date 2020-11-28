@@ -212,6 +212,10 @@ class Board(board.BaseBoard):
         st = self.board[start[0]][start[1]]
         et = self.board[end[0]][end[1]]
 
+        # cant land on corners
+        if end in [(0, 0), (0, 8), (8, 0), (8, 8)]:
+            return False, "Cant end on tile corners"
+
         # start tile cant be empty
         if isinstance(st.piece, board.EmptyTile):
             return False, "Start tile is empty"
