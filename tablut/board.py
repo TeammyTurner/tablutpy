@@ -1,5 +1,8 @@
 import copy
 
+# TODO: We have to clean this shit up, like, a lot.
+
+
 class BasePiece(object):
     """
     Base piece implementation
@@ -75,9 +78,9 @@ class BaseTile(object):
         """
         already_empty = isinstance(self.piece, EmptyTile)
         self.piece = EmptyTile()
-        return already_empty    
+        return already_empty
 
-        
+
 class BaseCastle(BaseTile):
     """
     Castle tile
@@ -103,6 +106,7 @@ class BaseEscape(BaseTile):
     """
     Escape tile
     """
+
     def _check_if_can_place(self, piece):
         """
         Only king can be placed in escape
@@ -137,15 +141,20 @@ class BaseBoard(object):
     """
     Base board implementation
     """
+
     def __init__(self):
         self.board_history = list()
         self.board = self.unpack(self.BOARD_TEMPLATE)
-        # Save initial state to board history 
+        # Save initial state to board history
         # (needed as a winning condition is when the same board status appears twice)
         self.board_history.append(self.pack(self.board))
 
     @property
     def TILE_PIECE_MAP(self):
+        raise NotImplementedError
+
+    @property
+    def INVERSE_TILE_PIECE_MAP(self):
         raise NotImplementedError
 
     @property
@@ -158,19 +167,13 @@ class BaseBoard(object):
         instead of a matrix of objects
         """
         grid = copy.copy(self.BOARD_TEMPLATE)
-
         for row_i, row in enumerate(grid):
             for col_i, column in enumerate(grid):
                 tile = board[row_i][col_i]
-                # FIXME: really sorry for this :'(((
-                for k, v in self.TILE_PIECE_MAP.items():
-                    # check if the tile correspond to this symbol
-                    if isinstance(tile, v[0]) and isinstance(tile.piece, v[1]):
-                        grid[row_i][col_i] = k
-                        break
+                grid[row_i][col_i] = self.INVERSE_TILE_PIECE_MAP[tile]
         return grid
 
-    def unpack(self, template):
+    def unpack(self, template):  # TODO: Remove this, this doesn't actually do shit
         """
         Builds the board using the board template
         """
@@ -196,21 +199,25 @@ class BaseBoard(object):
         Returns the number of checkers captured
         """
         captures = 0
-
+        print("STEP {} {}".format(start, end))
         if not check_legal:
             legal_move = True
         else:
             legal_move, message = self.is_legal(player, start, end)
-        
+
         if legal_move:
             # perform move
-            piece = self.board[start[0]][start[1]].piece
-            self.board[start[0]][start[1]].empty()
-            self.board[end[0]][end[1]].place(piece)
-    
+            # This removes the tile: we just keep the int
+            piece = int(self.board[start[0]][start[1]])
+            # This removes the piece: we just keep the decimal part
+            self.board[start[0]][start[1]] = self.board[start[0]
+                                                        ][start[1]] - int(self.board[start[0]][start[1]])  # The modulo %1 doesn't work: Python always returns positives
+            self.board[end[0]][end[1]] = self.board[end[0]][end[1]
+                                                            ] + piece  # This adds the piece to the new tile
+
             # remove captured pieces
             captures = self.apply_captures(end)
-            
+
             # check for winning condition
             if self.winning_condition():
                 raise WinException

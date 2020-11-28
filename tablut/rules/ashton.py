@@ -100,12 +100,28 @@ class Board(board.BaseBoard):
             "TW": 2,
             "TB": -2,
             "TK": 1,
-            "ce": 0.5,
+            "ce": -0.5,
             "CB": -2.5,
             "ee": 0.3,
             "EK": 1.3,
             "Se": 0.7,
             "SK": 1.7
+        }
+
+    @property
+    # We know we could inverse the other one, but we're tryna be fast, man!
+    def INVERSE_TILE_PIECE_MAP(self):
+        return {
+            0: "te",
+            2: "TW",
+            -2: "TB",
+            1: "TK",
+            -0.5: "ce",
+            -2.5: "CB",
+            0.3: "ee",
+            1.3: "EK",
+            0.7: "Se",
+            1.7: "SK"
         }
 
     @property
@@ -126,7 +142,7 @@ class Board(board.BaseBoard):
         """
         Builds the board using the board template
         """
-        grid = np.array(self.BOARD_TEMPLATE)
+        grid = np.empty((9, 9))
 
         for row_i, row in enumerate(grid):
             for col_i, column in enumerate(row):
@@ -146,7 +162,7 @@ class Board(board.BaseBoard):
             return False, "Cant end on tile corners"
 
         # start tile cant be empty
-        if st == 0:
+        if -1 < st < 1:
             return False, "Start tile is empty"
 
         # start tile must contain my pieces
@@ -167,7 +183,7 @@ class Board(board.BaseBoard):
             return False, "Moves need to be orthogonal"
 
         # End tile cannot be already occupied
-        if not 0 < et < 1:
+        if not -1 < et < 1:
             return False, "Cannot go into already occupied tile"
 
         # End tile cannot be the castle
@@ -176,7 +192,7 @@ class Board(board.BaseBoard):
 
         # End tile cannot be a camp unless a black soldier is moving inside its starting camp
         # and never left it
-        if et == 0.5 and not st % 1 == 0.5:
+        if et == -0.5 and not (st - int(st)) == -0.5:
             return False, "Cannot end in camp"
 
         # Escape tile can be reached only by the king
@@ -204,12 +220,11 @@ class Board(board.BaseBoard):
         Apply orthogonal captures for soldiers and 
         """
         changed_tile = self.board[changed_position[0]][changed_position[1]]
-        piece_class = [type(changed_tile.piece)]
         enemy_class = [-2] if changed_tile > 0 else [
             1, 2]
 
         captures = self._orthogonal_capture(
-            changed_position, enemy_class, piece_class)
+            changed_position, enemy_class)
         king_captured = self._king_in_castle_capture()
         king_captured = self._king_adjacent_castle_capture()
 
@@ -224,7 +239,7 @@ class Board(board.BaseBoard):
         """
         castle = self.board[4][4]
         if castle > 1 and \
-                self.get_neighobourhood_sum((4, 4)) == -8:
+                self.get_neighbourhood_sum((4, 4)) == -8:
             return True
 
         return False
@@ -251,13 +266,13 @@ class Board(board.BaseBoard):
         sum = 0
         for d in directions:
             try:
-                neighbour_pos = _neighbour_position(position, d)
+                neighbour_pos = self._neighbour_position(position, d)
                 sum += self.board[neighbour_pos[0]][neighbour_pos[1]]
-            except ValueError:
+            except (ValueError, IndexError):
                 pass  # If the position doesn't exist, let's skip it!
         return sum
 
-    def _orthogonal_capture(self, changed_position, enemy_class, piece_class):
+    def _orthogonal_capture(self, changed_position, enemy_class):
         """
         A soldier is captured if its surrounded by two other soldiers, note that the capture needs to be
         active: if a soldier places himself between two enemies its not captured.
@@ -298,11 +313,18 @@ class Board(board.BaseBoard):
                 if (neighbour_is_king and (king_in_castle or king_adjacent_to_castle)) is False:
                     # Check that enemy is surrounded on the other side
                     # castle and camp are counted as enemies
-                    other_side = self._neighbour_position(neighbour_pos, d)
-                    if other_side == piece_class or other_side == 0.7 or other_side == 0.5:
-                        # element in neighbour_pos has been captured
-                        self.board[neighbour_pos[0]][neighbour_pos[1]].empty()
-                        captured += 1
+                    try:
+                        other_side_pos = self._neighbour_position(
+                            neighbour_pos, d)
+                        other_side = self.board[other_side_pos[0]
+                                                ][other_side_pos[1]]
+                        if (other_side*neighbour > 0) or other_side == 0.7 or other_side == -0.5:
+                            # element in neighbour_pos has been captured
+                            self.board[neighbour_pos[0]][neighbour_pos[1]
+                                                         ] = self.board[neighbour_pos[0]][neighbour_pos[1]] - int(self.board[neighbour_pos[0]][neighbour_pos[1]])
+                            captured += 1
+                    except ValueError:
+                        pass
         return captured
 
     def _adjacent_to(self, position, cell, is_piece=False):
@@ -353,7 +375,7 @@ class Board(board.BaseBoard):
             pos[0] += 1
 
         # check that new position is in the board bound
-        if pos[0] > len(self.board) or pos[1] > len(self.board[0]):
+        if pos[0] > len(self.board)-1 or pos[1] > len(self.board[0])-1:
             raise ValueError("position out of board bound")
         else:
             return pos
@@ -362,14 +384,14 @@ class Board(board.BaseBoard):
         """
         Check if escape tiles are occupied by a king
         """
-        winning = len(np.where(self.board == 1.3)) > 0
+        winning = len(np.where(self.board.flatten() == 1.3)[0]) > 0
         return winning
 
     def lose_condition(self):
         """
         Check in all board if king is present
         """
-        king_present = len(np.where(self.board.astype(int) == 1)) > 0
+        king_present = len(np.where(self.board.astype(int) == 1)[0]) > 0
         return not king_present
 
     def draw_condition(self):
@@ -378,4 +400,5 @@ class Board(board.BaseBoard):
         """
         packed = self.pack(self.board)
         if packed in self.board_history:
+            print(self.board_history)
             return True

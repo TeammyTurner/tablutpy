@@ -2,6 +2,7 @@ from enum import Enum
 from copy import deepcopy
 from tablut.board import WinException, DrawException, LoseException
 
+
 class Player(Enum):
     WHITE = "W"
     BLACK = "B"
@@ -34,15 +35,16 @@ class Game(object):
         """
         if self.turn == Player.WHITE and not self.ended:
             try:
-                self.board.step(Player.WHITE, start, end, check_legal=known_legal)
+                self.board.step(Player.WHITE, start, end,
+                                check_legal=known_legal)
                 self.turn = Player.BLACK
             except WinException:
-                # white winned
+                # white won
                 self.ended = True
                 self.winner = Player.WHITE
             except LoseException:
-                # white losed (shouldn't happen after a white move right now)
-                # FIXME: Stuck player? 
+                # white lost (shouldn't happen after a white move right now)
+                # FIXME: Stuck player?
                 self.ended = True
                 self.winner = Player.BLACK
             except DrawException:
@@ -58,15 +60,16 @@ class Game(object):
         """
         if self.turn == Player.BLACK:
             try:
-                self.board.step(Player.BLACK, start, end, check_legal=known_legal)
+                self.board.step(Player.BLACK, start, end,
+                                check_legal=known_legal)
                 self.turn = Player.WHITE
             except WinException:
-                # white winned (shouldn't happen here...)
+                # white won (shouldn't happen here...)
                 # FIXME: Implement stuck player?
                 self.ended = True
                 self.winner = Player.WHITE
             except LoseException:
-                # white losed
+                # white lost
                 self.ended = True
                 self.winner = Player.BLACK
             except DrawException:
@@ -90,4 +93,4 @@ class Game(object):
         else:
             cpy.black_move(start, end)
 
-        return cpy        
+        return cpy
