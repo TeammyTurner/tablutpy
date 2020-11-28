@@ -28,7 +28,7 @@ class Game(object):
         self.ended = False
         self.winner = None
 
-    def white_move(self, start, end):
+    def white_move(self, start, end, known_legal=False):
         """
         Make the white move
         """
