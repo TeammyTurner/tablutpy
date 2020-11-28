@@ -76,7 +76,7 @@ class Game(object):
         else:
             raise TurnException("Its white player turn")
 
-    def what_if(self, player=None, start, end):
+    def what_if(self, start, end, player=None):
         """
         Return the game instance if a particular move is made but doesnt modify the actual instance. 
         The right player is automatically used if not provided
