@@ -34,7 +34,7 @@ class Game(object):
         """
         if self.turn == Player.WHITE and not self.ended:
             try:
-                self.board.step(Player.WHITE, start, end)
+                self.board.step(Player.WHITE, start, end, check_legal=known_legal)
                 self.turn = Player.BLACK
             except WinException:
                 # white winned
@@ -52,13 +52,13 @@ class Game(object):
         else:
             raise TurnException("Its black player turn")
 
-    def black_move(self, start, end):
+    def black_move(self, start, end, known_legal=False):
         """
         Make the black move
         """
         if self.turn == Player.BLACK:
             try:
-                self.board.step(Player.BLACK, start, end)
+                self.board.step(Player.BLACK, start, end, check_legal=known_legal)
                 self.turn = Player.WHITE
             except WinException:
                 # white winned (shouldn't happen here...)
