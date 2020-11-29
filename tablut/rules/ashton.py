@@ -111,20 +111,19 @@ class Board(board.BaseBoard):
                     ) - 1  # final cell already considered
         if delta > 0:
             sum = 0
-            for traversed_tile in range(start[mov_direction], end[mov_direction]):
-                sum = sum + self.board[start]
+            for traversed_tile in range(start[mov_direction]+1, end[mov_direction]):
                 if mov_direction == 0:
                     sum = sum + self.board[traversed_tile][start[1]]
                 else:
                     sum = sum + self.board[start[0]][traversed_tile]
             if not sum == 0:
-                return False, "Cannot pass over obstacle: %s" % et
+                return False, "Cannot pass over obstacle: %s" % sum
 
         return True, ""
 
     def apply_captures(self, changed_position):
         """
-        Apply orthogonal captures for soldiers and 
+        Apply orthogonal captures for soldiers and
         """
         changed_tile = self.board[changed_position[0]][changed_position[1]]
         enemy_class = [-2] if changed_tile > 0 else [
@@ -145,8 +144,9 @@ class Board(board.BaseBoard):
         If king is still in castle its captured only when its surrounded
         """
         castle = self.board[4][4]
-        if castle > 1 and \
+        if castle == 1.7 and \
                 self.get_neighbourhood_sum((4, 4)) == -8:
+            self.board[4][4] = 0.7
             return True
 
         return False
@@ -155,15 +155,20 @@ class Board(board.BaseBoard):
         """
         When king is adjacent to castle its captured only if its surrounded in all the other sides
         """
-        directions = ["up", "right", "down", "left"]
-        captured = False
+        king_i, king_j = np.where(self.board == 1)
+        if len(king_i) > 0:  # Numpy returns an array instead of the single value, so we have to get its one and only element
+            king_i = king_i[0]
+            king_j = king_j[0]
 
-        # check if king is in castle neighborhood
-        # If the module is 1, it means that there's a king
-        captured = self.get_neighbourhood_sum((4, 4)) == -6.7
-        # Emptying the castle is useless: we already lost.
+            # check if king is in castle neighborhood
+            # If the module is 1, it means that there's a king
+            if self.get_neighbourhood_sum(
+                    (king_i, king_j)) == -5.3:
+                self.board[king_i][king_j] = self.board[king_i][king_j] - \
+                    int(self.board[king_i][king_j])
+                return True
 
-        return captured
+        return False
 
     def get_neighbourhood_sum(self, position):
         """
@@ -217,7 +222,7 @@ class Board(board.BaseBoard):
                 king_in_castle = neighbour == 1.7
                 king_adjacent_to_castle = self.get_neighbourhood_sum(
                     neighbour_pos) % 1 == 0.7
-                if (neighbour_is_king and (king_in_castle or king_adjacent_to_castle)) is False:
+                if (neighbour_is_king and not (king_in_castle or king_adjacent_to_castle)) or not neighbour_is_king:
                     # Check that enemy is surrounded on the other side
                     # castle and camp are counted as enemies
                     try:
@@ -225,7 +230,7 @@ class Board(board.BaseBoard):
                             neighbour_pos, d)
                         other_side = self.board[other_side_pos[0]
                                                 ][other_side_pos[1]]
-                        if (other_side*neighbour > 0) or other_side == 0.7 or other_side == -0.5:
+                        if (other_side*neighbour < 0) or other_side % 1 == 0.7 or (other_side - int(other_side)) == -0.5:
                             # element in neighbour_pos has been captured
                             self.board[neighbour_pos[0]][neighbour_pos[1]
                                                          ] = self.board[neighbour_pos[0]][neighbour_pos[1]] - int(self.board[neighbour_pos[0]][neighbour_pos[1]])
@@ -298,7 +303,8 @@ class Board(board.BaseBoard):
         """
         Check in all board if king is present
         """
-        king_present = len(np.where(self.board.astype(int) == 1)[0]) > 0
+        king_present = len(
+            np.where(self.board.flatten().astype(int) == 1)[0]) > 0
         return not king_present
 
     def draw_condition(self):
@@ -307,5 +313,4 @@ class Board(board.BaseBoard):
         """
         packed = self.pack(self.board)
         if packed in self.board_history:
-            print(self.board_history)
             return True
