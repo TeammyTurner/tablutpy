@@ -1,89 +1,8 @@
-import copy
 import tablut.board as board
 from tablut.game import Player
 import numpy as np
 
 
-class Tile(board.BaseTile):
-    pass
-
-
-class BlackSoldier(board.BaseBlackSoldier):
-    """
-    Black soldier implementation - attacker
-    """
-    out_of_camp = False
-    initial_camp = None
-
-    def __init__(self, initial_camp):
-        super().__init__()
-        self.initial_camp = initial_camp
-
-    def went_out_of_camp(self):
-        """
-        Black soldier went out of original camp and cannot go back in another campo
-        """
-        self.out_of_camp = True
-
-
-class WhiteSoldier(board.BaseWhiteSoldier):
-    """
-    White soldier implementation - defender
-    """
-    pass
-
-
-class King(board.BaseKing):
-    """
-    King implementation
-    """
-    pass
-
-
-class Castle(board.BaseCastle):
-    """
-    Castle tile
-    """
-
-    def _check_if_can_place(self, piece):
-        """
-        Castle cannot be occupied by anyone
-        """
-        raise ValueError("Castle cannot be occupied anymore")
-
-
-class Camp(board.BaseCamp):
-    """
-    Camp tile
-    """
-
-    def _check_if_can_place(self, piece):
-        """
-        Only black soldiers can move inside a camp altough only if its their original camp.
-        """
-        super()._check_if_can_place(piece)
-        if not isinstance(piece, BlackSoldier):
-            raise ValueError("Can't occupy castle")
-        else:
-            # TODO: handle piece not belonging to this camp set
-            pass
-
-
-class Escape(board.BaseEscape):
-    """
-    Escape tile
-    """
-
-    def _check_if_can_place(self, piece):
-        """
-        Only king can be placed in escape
-        """
-        super()._check_if_can_place(piece)
-        if not isinstance(piece, King):
-            raise ValueError("Only king can occupy escape")
-
-
-# TODO: How do we implement when a user is stuck?
 class Board(board.BaseBoard):
     """
     Tablut board is a grid of 9x9 squares
@@ -137,18 +56,6 @@ class Board(board.BaseBoard):
             ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
             ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"]
         ]
-
-    def unpack(self, template):
-        """
-        Builds the board using the board template
-        """
-        grid = np.empty((9, 9))
-
-        for row_i, row in enumerate(grid):
-            for col_i, column in enumerate(row):
-                tile = self.TILE_PIECE_MAP[template[row_i][col_i]]
-                grid[row_i][col_i] = tile
-        return grid
 
     def is_legal(self, player, start, end):
         """

@@ -1,119 +1,5 @@
 import copy
-
-# TODO: We have to clean this shit up, like, a lot.
-
-
-class BasePiece(object):
-    """
-    Base piece implementation
-    """
-    pass
-
-
-class BaseSoldier(BasePiece):
-    """
-    BaseSoldier piece
-    """
-    pass
-
-
-class BaseBlackSoldier(BaseSoldier):
-    """
-    Black soldier implementation - attacker
-    """
-    pass
-
-
-class BaseWhiteSoldier(BaseSoldier):
-    """
-    White soldier implementation - defender
-    """
-    pass
-
-
-class BaseKing(BaseSoldier):
-    """
-    King implementation
-    """
-    pass
-
-
-class EmptyTile(object):
-    pass
-
-
-class BaseTile(object):
-    """
-    Tile of the board
-    """
-    piece = EmptyTile()
-
-    def occupied(self):
-        """
-        Check if tile is occupied
-        """
-        return not isinstance(self.piece, EmptyTile)
-
-    def _check_if_can_place(self, piece):
-        """
-        Raise proper exception if piece cannot be placed
-        """
-        if not isinstance(self.piece, EmptyTile):
-            raise ValueError("Tile already occupied")
-
-    def place(self, piece):
-        """
-        Place a piece if can be placed
-        """
-        try:
-            self._check_if_can_place(piece)
-            self.piece = piece
-        except Exception:
-            raise
-
-    def empty(self):
-        """
-        Remove a piece if can be removed. 
-        Return True if a piece was removed, False if was already empty
-        """
-        already_empty = isinstance(self.piece, EmptyTile)
-        self.piece = EmptyTile()
-        return already_empty
-
-
-class BaseCastle(BaseTile):
-    """
-    Castle tile
-    """
-    pass
-
-
-class BaseCamp(BaseTile):
-    """
-    Camp tile
-    """
-    pass
-
-
-class BaseCampSet(list):
-    """
-    Camps are related by being in one camp set
-    """
-    pass
-
-
-class BaseEscape(BaseTile):
-    """
-    Escape tile
-    """
-
-    def _check_if_can_place(self, piece):
-        """
-        Only king can be placed in escape
-        """
-        super()._check_if_can_place(piece)
-        if not isinstance(piece, BaseKing):
-            raise ValueError("Only king can occupy escape")
+import numpy as np
 
 
 class WinException(Exception):
@@ -177,14 +63,12 @@ class BaseBoard(object):
         """
         Builds the board using the board template
         """
-        grid = copy.copy(self.BOARD_TEMPLATE)
+        grid = np.empty((9, 9))
 
         for row_i, row in enumerate(grid):
             for col_i, column in enumerate(row):
-                tile, piece = self.TILE_PIECE_MAP[template[row_i][col_i]]
-                grid[row_i][col_i] = tile()
-                if piece is not None:
-                    grid[row_i][col_i].piece = piece()
+                tile = self.TILE_PIECE_MAP[template[row_i][col_i]]
+                grid[row_i][col_i] = tile
         return grid
 
     def is_legal(self, player, start, end):
