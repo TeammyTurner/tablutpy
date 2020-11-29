@@ -83,7 +83,7 @@ class BaseBoard(object):
         Returns the number of checkers captured
         """
         captures = 0
-        print("STEP {} {}".format(start, end))
+        #print("STEP {} {}".format(start, end))
         if not check_legal:
             legal_move = True
         else:
