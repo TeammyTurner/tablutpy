@@ -103,9 +103,9 @@ class Board(board.BaseBoard):
         #    return False, "Only king can go in escape"
 
         # Check for obastacles in movement.
-        delta = end[mov_direction] - start[mov_direction] - \
-            1  # final cell already considered
-        if delta != 0:
+        # final cell already considered
+        delta = end[mov_direction] - start[mov_direction]
+        if abs(delta)-1 > 0:
             sum = 0
             i = start[mov_direction]
             while i != end[mov_direction]:
@@ -118,10 +118,6 @@ class Board(board.BaseBoard):
                     sum = sum + self.board[i][start[1]]
                 else:
                     sum = sum + self.board[start[0]][i]
-                if delta < 0:
-                    i = i-1
-                else:
-                    i = i+1
             if not sum == 0:
                 return False, "Cannot pass over obstacle: %s" % sum
 
