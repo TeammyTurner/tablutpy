@@ -21,8 +21,6 @@ class Board(board.BaseBoard):
             "TK": 1,
             "ce": -0.5,
             "CB": -2.5,
-            "ee": 0.3,
-            "EK": 1.3,
             "Se": 0.7,
             "SK": 1.7
         }
@@ -37,8 +35,6 @@ class Board(board.BaseBoard):
             1: "TK",
             -0.5: "ce",
             -2.5: "CB",
-            0.3: "ee",
-            1.3: "EK",
             0.7: "Se",
             1.7: "SK"
         }
@@ -46,15 +42,15 @@ class Board(board.BaseBoard):
     @property
     def BOARD_TEMPLATE(self):
         return [
-            ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"],
-            ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
-            ["ee", "te", "te", "te", "TW", "te", "te", "te", "ee"],
+            ["te", "te", "te", "CB", "CB", "CB", "te", "te", "te"],
+            ["te", "te", "te", "te", "CB", "te", "te", "te", "te"],
+            ["te", "te", "te", "te", "TW", "te", "te", "te", "te"],
             ["CB", "te", "te", "te", "TW", "te", "te", "te", "CB"],
             ["CB", "CB", "TW", "TW", "SK", "TW", "TW", "CB", "CB"],
             ["CB", "te", "te", "te", "TW", "te", "te", "te", "CB"],
-            ["ee", "te", "te", "te", "TW", "te", "te", "te", "ee"],
-            ["ee", "te", "te", "te", "CB", "te", "te", "te", "ee"],
-            ["te", "ee", "ee", "CB", "CB", "CB", "ee", "ee", "te"]
+            ["te", "te", "te", "te", "TW", "te", "te", "te", "te"],
+            ["te", "te", "te", "te", "CB", "te", "te", "te", "te"],
+            ["te", "te", "te", "CB", "CB", "CB", "te", "te", "te"]
         ]
 
     def is_legal(self, player, start, end):
@@ -103,10 +99,10 @@ class Board(board.BaseBoard):
             return False, "Cannot end in camp"
 
         # Escape tile can be reached only by the king
-        if et == 0.3 and not int(st) == 1:
-            return False, "Only king can go in escape"
+        # if et == 0.3 and not int(st) == 1:
+        #    return False, "Only king can go in escape"
 
-        # Check for obastacles in movement
+        # Check for obastacles in movement. FIXME: There's a bug here: if we're traversing more than one escape cell, it will be considered as illegal
         delta = abs(end[mov_direction] - start[mov_direction]
                     ) - 1  # final cell already considered
         if delta > 0:
@@ -295,8 +291,17 @@ class Board(board.BaseBoard):
     def winning_condition(self):
         """
         Check if escape tiles are occupied by a king
+        TODO: Make this check the single tiles since now escapes are just normal tiles
         """
-        winning = len(np.where(self.board.flatten() == 1.3)[0]) > 0
+        escape_tiles = [(0, 1), (0, 2), (0, 6), (0, 7),
+                        (1, 0), (1, 8),
+                        (2, 0), (2, 8),
+                        (6, 0), (6, 8),
+                        (7, 0), (7, 8),
+                        (8, 1), (8, 2), (8, 6), (8, 7)]
+        winning = False
+        for tile in escape_tiles:
+            winning = self.board[tile[0]][tile[1]] == 1
         return winning
 
     def lose_condition(self):
