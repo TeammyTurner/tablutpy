@@ -102,16 +102,26 @@ class Board(board.BaseBoard):
         # if et == 0.3 and not int(st) == 1:
         #    return False, "Only king can go in escape"
 
-        # Check for obastacles in movement. FIXME: There's a bug here: if we're traversing more than one escape cell, it will be considered as illegal
-        delta = abs(end[mov_direction] - start[mov_direction]
-                    ) - 1  # final cell already considered
-        if delta > 0:
+        # Check for obastacles in movement.
+        delta = end[mov_direction] - start[mov_direction] - \
+            1  # final cell already considered
+        if delta != 0:
             sum = 0
-            for traversed_tile in range(start[mov_direction]+1, end[mov_direction]):
-                if mov_direction == 0:
-                    sum = sum + self.board[traversed_tile][start[1]]
+            i = start[mov_direction]
+            while i != end[mov_direction]:
+                # This is firstly needed to skip the first cell (containing our piece), then to loop
+                if delta < 0:
+                    i = i-1
                 else:
-                    sum = sum + self.board[start[0]][traversed_tile]
+                    i = i+1
+                if mov_direction == 0:
+                    sum = sum + self.board[i][start[1]]
+                else:
+                    sum = sum + self.board[start[0]][i]
+                if delta < 0:
+                    i = i-1
+                else:
+                    i = i+1
             if not sum == 0:
                 return False, "Cannot pass over obstacle: %s" % sum
 
