@@ -220,5 +220,16 @@ class AshtonEndConditionTest(unittest.TestCase):
             board.step(Player.BLACK, (7, 4), (5, 4))
 
 
+class AshtonUtils(unittest.TestCase):
+    def test_infer_move(self):
+        board1 = ashton.Board()
+        board1.step(Player.WHITE, (2, 4), (2, 3))
+        
+        board2 = ashton.Board()
+        
+        start, end = board2.infer_move(board1.board)
+        self.assertEqual(start, (2, 4))
+        self.assertEqual(end, (2, 3))
+
 if __name__ == '__main__':
     unittest.main()

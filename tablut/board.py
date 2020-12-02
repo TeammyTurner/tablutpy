@@ -47,6 +47,12 @@ class BaseBoard(object):
     def BOARD_TEMPLATE(self):
         raise NotImplementedError
 
+    def infer_move(self, new_board):
+        """
+        Infer a move from a different board configuration
+        """
+        raise NotImplementedError
+
     def pack(self, board):
         """
         Returns the grid with the str rappresentation stated in TILE_PIECE_MAP

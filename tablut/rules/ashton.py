@@ -53,6 +53,25 @@ class Board(board.BaseBoard):
             ["te", "te", "te", "CB", "CB", "CB", "te", "te", "te"]
         ]
 
+    def infer_move(self, new_board):
+        # get the different tiles from my board configuration
+        changed_idxs = np.where(new_board != self.board)
+        changed_idxs = list(zip(changed_idxs[0], changed_idxs[1]))
+
+        if len(changed_idxs) > 2:
+            raise RuntimeError("Cant infer more than one move")
+        else:
+            if self.board[changed_idxs[0]] in [-0.5, 0, 0.7]:
+                # 0th index is a tile where a piece can be plced so must be the end coord
+                end = changed_idxs[0]
+                start = changed_idxs[1]
+            else:
+                # 0th index must be the start
+                start = changed_idxs[0]
+                end = changed_idxs[1]
+
+        return start, end
+
     def is_legal(self, player, start, end):
         """
         Check if move is legal according to ashton rules
