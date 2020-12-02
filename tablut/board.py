@@ -90,10 +90,10 @@ class BaseBoard(object):
         """
         captures = 0
         #print("STEP {} {}".format(start, end))
-        if not check_legal:
-            legal_move = True
-        else:
+        if check_legal:
             legal_move, message = self.is_legal(player, start, end)
+        else:
+            legal_move = True
 
         if legal_move:
             # perform move
