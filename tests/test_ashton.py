@@ -171,6 +171,12 @@ class AshtonCaptureTest(unittest.TestCase):
         board.step(Player.WHITE, (4, 2), (3, 2))
         self.assertTrue(board.board[3][1] == 0)
 
+    def test_incamp_capture(self):
+        board = ashton.Board()
+
+        board.step(Player.WHITE, (3, 4), (3, 1))
+        self.assertNotEqual(board.board[3][0], 0)
+
     def test_castle_side_with_king_capture(self):
         board = ashton.Board()
 
