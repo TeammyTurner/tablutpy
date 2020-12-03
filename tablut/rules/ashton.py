@@ -323,7 +323,7 @@ class Board(board.BaseBoard):
                         (8, 1), (8, 2), (8, 6), (8, 7)]
         winning = False
         for tile in escape_tiles:
-            winning = self.board[tile[0]][tile[1]] == 1
+            winning = self.board[tile[0]][tile[1]] == 1 or winning
         return winning
 
     def lose_condition(self):
