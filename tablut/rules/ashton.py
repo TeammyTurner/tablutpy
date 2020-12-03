@@ -77,7 +77,7 @@ class Board(board.BaseBoard):
         et = self.board[end[0]][end[1]]
 
         # cant land on corners
-        #if end in [(0, 0), (0, 8), (8, 0), (8, 8)]:
+        # if end in [(0, 0), (0, 8), (8, 0), (8, 8)]:
         #    return False, "Cant end on tile corners"
 
         # start tile cant be empty
@@ -131,9 +131,9 @@ class Board(board.BaseBoard):
                 else:
                     i = i+1
                 if mov_direction == 0:
-                    sum = sum + self.board[i][start[1]]
+                    sum = sum + abs(self.board[i][start[1]])
                 else:
-                    sum = sum + self.board[start[0]][i]
+                    sum = sum + abs(self.board[start[0]][i])
             if not sum == 0:
                 return False, "Cannot pass over obstacle: %s" % sum
 
