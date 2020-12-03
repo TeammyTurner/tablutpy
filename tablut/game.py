@@ -26,8 +26,19 @@ class Game(object):
     def __init__(self, board):
         self.board = board
         self.turn = Player.WHITE
-        self.ended = False
-        self.winner = None
+
+    @property
+    def ended(self):
+        return self.board.winning_condition() or self.board.lose_condition() or self.board.draw_condition()
+
+    @property
+    def winner(self):
+        if self.board.winning_condition():
+            return Player.WHITE
+        elif self.board.lose_condition():
+            return Player.BLACK
+        else:
+            return None
 
     def white_move(self, start, end, known_legal=False):
         """
@@ -40,15 +51,13 @@ class Game(object):
                 self.turn = Player.BLACK
             except WinException:
                 # white won
-                self.ended = True
-                self.winner = Player.WHITE
+                pass
             except LoseException:
                 # white lost (shouldn't happen after a white move right now)
                 # FIXME: Stuck player?
-                self.ended = True
-                self.winner = Player.BLACK
+                pass
             except DrawException:
-                self.ended = True
+                pass
             except Exception as e:
                 raise ValueError("White move illegal: %s" % str(e))
         else:
@@ -66,14 +75,12 @@ class Game(object):
             except WinException:
                 # white won (shouldn't happen here...)
                 # FIXME: Implement stuck player?
-                self.ended = True
-                self.winner = Player.WHITE
+                pass
             except LoseException:
                 # white lost
-                self.ended = True
-                self.winner = Player.BLACK
+                pass
             except DrawException:
-                self.ended = True
+                pass
             except Exception as e:
                 raise ValueError("Black move illegal:%s " % str(e))
         else:
