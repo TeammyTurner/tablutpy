@@ -339,5 +339,7 @@ class Board(board.BaseBoard):
         Twice the same state
         """
         packed = self.pack(self.board)
-        if packed in self.board_history:
+        if packed in self.board_history[:-1]:
             return True
+        else:
+            return False
